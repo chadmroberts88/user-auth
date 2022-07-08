@@ -8,3 +8,17 @@
     -moz-box-sizing: border-box;
     -webkit-box-sizing: border-box;
 }
+
+html {
+  background-color: lightblue;
+}
+
+body, #root {
+  height: 100vh;
+}
+
+@supports (-webkit-touch-callout: none) {
+  body, #root {
+    height: -webkit-fill-available;
+  }
+}

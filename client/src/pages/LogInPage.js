@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useContext } from 'react'
+import { UserAuthContext } from '../context/UserAuthContext'
 import { Link, useNavigate } from 'react-router-dom'
 
 import Form from '../components/Form'
@@ -7,13 +8,12 @@ import Submit from '../components/Submit'
 
 const LogInPage = () => {
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const { email, setEmail, password, setPassword } = useContext(UserAuthContext);
   const navigate = useNavigate();
 
   const logInUser = async (event) => {
     event.preventDefault();
-    const response = await fetch('http://localhost:3000/login', {
+    const response = await fetch('http://localhost:3000/api/login', {
 
       method: 'POST',
 
@@ -31,8 +31,7 @@ const LogInPage = () => {
     const recievedData = await response.json();
     console.log(recievedData);
 
-    if (recievedData.token) {
-      localStorage.setItem('token', recievedData.token);
+    if (recievedData.status !== 'error') {
       alert('Login Successful');
       navigate('/dashboard');
     } else {

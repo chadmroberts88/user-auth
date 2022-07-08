@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import styled from 'styled-components'
 
 const Container = styled.div`
@@ -36,6 +37,7 @@ const Button = styled.button`
 const DashboardPage = () => {
 
   const [dadJoke, setDadJoke] = useState('- - - - - -');
+  const navigate = useNavigate();
 
   const getDadJoke = async () => {
 
@@ -61,7 +63,7 @@ const DashboardPage = () => {
       <JokeBox>
         {dadJoke}
       </JokeBox>
-      <Button>
+      <Button onClick={() => { navigate('/') }}>
         Logout
       </Button>
     </Container>
