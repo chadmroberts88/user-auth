@@ -5,9 +5,13 @@ const StyledForm = styled.form`
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  width: 30vw;
-  height: 30vw;
+  justify-content: center;
+  width: 80vw;
+  height: 40vh;
+  max-width: 340px;
+  min-width: 240px;
+  max-height: 340px;
+  min-height: 240px;
   border: 1px solid black;
   border-radius: 10px;
   padding: 20px;

@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useContext } from 'react'
+import { UserAuthContext } from '../context/UserAuthContext'
 import { useNavigate } from 'react-router-dom'
 
 import Form from '../components/Form'
@@ -7,15 +8,13 @@ import Submit from '../components/Submit'
 
 const RegistrationPage = () => {
 
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const { name, setName, email, setEmail, password, setPassword } = useContext(UserAuthContext);
   const navigate = useNavigate();
 
   const registerUser = async (event) => {
 
     event.preventDefault();
-    const response = await fetch('http://localhost:3000/register', {
+    const response = await fetch('http://localhost:3000/api/register', {
 
       method: 'POST',
 
