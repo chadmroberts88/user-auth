@@ -22,10 +22,6 @@ const createUser = (user) => {
   return new Promise((resolve, reject) => {
     user.id = uuidv4();
 
-    !user.soundOn ? user.soundOn = 0 : user.soundOn = 1;
-    !user.darkModeOn ? user.darkModeOn = 0 : user.darkModeOn = 1;
-    !user.useSwipeOn ? user.useSwipeOn = 0 : user.useSwipeOn = 1;
-
     const statement = `INSERT INTO UserData (id, username, email, password, soundOn, darkModeOn, useSwipeOn, best) VALUES (
       '${user.id}',
       '${user.username}',
@@ -73,7 +69,7 @@ const logInUser = (user) => {
         reject({
           code: 404,
           message: 'User not found.'
-        })
+        });
       }
 
       if (result.length > 0 && (result[0].password !== user.password)) {
@@ -86,7 +82,8 @@ const logInUser = (user) => {
       if (result.length > 0 && (result[0].password === user.password)) {
         resolve({
           code: 200,
-          message: 'Passwords match.'
+          message: 'Passwords match.',
+          data: result
         });
       }
 
@@ -94,37 +91,207 @@ const logInUser = (user) => {
   });
 }
 
-const updateUser = () => {
-
-}
-
-const deleteUser = () => {
-
-}
-
-const findUser = (user) => {
+const updateUsername = (user) => {
   return new Promise((resolve, reject) => {
-    const statement = `SELECT * FROM UserData WHERE email = '${user.email}';`
+    const statement = `UPDATE UserData SET username = '${user.username}' WHERE email = '${user.email}';`;
     db.query(statement, (error, result) => {
-      if (error || (result.length === 0)) {
+
+      if (error) {
         reject({
-          message: error || 'User not found in database.'
+          code: 400,
+          message: error.sqlMessage
         });
       }
+
+      if (result.affectedRows === 0) {
+        reject({
+          code: 404,
+          message: 'User not found.'
+        })
+      }
+
+      if (result.affectedRows !== 0) {
+        resolve({
+          code: 200,
+          message: 'Username updated.'
+        });
+      }
+
+    })
+  });
+}
+
+const updatePassword = (user) => {
+  return new Promise((resolve, reject) => {
+    const statement = `UPDATE UserData SET password = '${user.password}' WHERE email = '${user.email}';`;
+    db.query(statement, (error, result) => {
+
+      if (error) {
+        reject({
+          code: 400,
+          message: error.sqlMessage
+        });
+      }
+
+      if (result.affectedRows === 0) {
+        reject({
+          code: 404,
+          message: 'User not found.'
+        })
+      }
+
+      if (result.affectedRows !== 0) {
+        resolve({
+          code: 200,
+          message: 'Password updated.'
+        });
+      }
+
+    })
+  });
+}
+
+const updateEmail = (user) => {
+  return new Promise((resolve, reject) => {
+    const statement = `UPDATE UserData SET email = '${user.newEmail}' WHERE email = '${user.email}';`;
+    db.query(statement, (error, result) => {
+
+      if (error) {
+        reject({
+          code: 400,
+          message: error.sqlMessage
+        });
+      }
+
+      if (result.affectedRows === 0) {
+        reject({
+          code: 404,
+          message: 'User not found.'
+        })
+      }
+
+      if (result.affectedRows !== 0) {
+        resolve({
+          code: 200,
+          message: 'Email updated.'
+        });
+      }
+
+    })
+  });
+}
+
+const updateSettings = (user) => {
+  return new Promise((resolve, reject) => {
+
+    const statement = `UPDATE UserData SET
+      soundOn = '${user.soundOn}',
+      darkModeOn = '${user.darkModeOn}',
+      useSwipeOn = '${user.useSwipeOn}'
+      WHERE email = '${user.email}';`;
+
+    db.query(statement, (error, result) => {
+
+      if (error) {
+        reject({
+          code: 400,
+          message: error.sqlMessage
+        });
+      }
+
+      if (result.affectedRows === 0) {
+        reject({
+          code: 404,
+          message: 'User not found.'
+        })
+      }
+
+      if (result.affectedRows !== 0) {
+        resolve({
+          code: 200,
+          message: 'Settings updated.'
+        });
+      }
+
+    })
+  });
+}
+
+
+
+const getLeaderboardList = (qty) => {
+  return new Promise((resolve, reject) => {
+    const statement = `SELECT username, best FROM UserData ORDER BY best DESC, username ASC LIMIT ${qty};`;
+    db.query(statement, (error, result) => {
+
+      if (error) {
+        reject({
+          code: 400,
+          message: error.sqlMessage
+        });
+      }
+
+      if (result.length === 0) {
+        reject({
+          code: 404,
+          message: 'No users found.'
+        });
+      }
+
       if (result.length > 0) {
         resolve({
-          name: result[0].name,
-          email: result[0].email
+          code: 200,
+          message: 'List retrieved.',
+          data: result
         });
       }
-    });
+
+    })
   });
+}
+
+const deleteUser = (user) => {
+  return new Promise((resolve, reject) => {
+    const statement = `DELETE FROM UserData WHERE email = '${user.email}';`;
+    db.query(statement, (error, result) => {
+
+      if (error) {
+        reject({
+          code: 400,
+          message: error.sqlMessage
+        });
+      }
+
+      if (result.affectedRows === 0) {
+        reject({
+          code: 404,
+          message: 'User not found.'
+        })
+      }
+
+      if (result.affectedRows !== 0) {
+        resolve({
+          code: 200,
+          message: 'User deleted.'
+        });
+      }
+
+    })
+  });
+}
+
+const getUserRank = (user) => {
+
 }
 
 module.exports = {
   createUser,
   logInUser,
-  findUser,
-  updateUser,
-  deleteUser
+  updateUsername,
+  updatePassword,
+  updateEmail,
+  updateSettings,
+  getLeaderboardList,
+  deleteUser,
+  getUserRank
 }
