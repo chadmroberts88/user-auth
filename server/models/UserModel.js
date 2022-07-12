@@ -15,24 +15,41 @@ const db = mysql.createConnection({
 
 db.connect((error) => {
   if (error) throw error;
-  console.log("MySQL Connected!");
-})
+  console.log("UserModel connected to MySQL!");
+});
 
 const createUser = (user) => {
   return new Promise((resolve, reject) => {
     user.id = uuidv4();
-    const statement = `INSERT INTO UserData (id, name, email, password) VALUES ('${user.id}', '${user.name}', '${user.email}', '${user.password}');`
+
+    !user.soundOn ? user.soundOn = 0 : user.soundOn = 1;
+    !user.darkModeOn ? user.darkModeOn = 0 : user.darkModeOn = 1;
+    !user.useSwipeOn ? user.useSwipeOn = 0 : user.useSwipeOn = 1;
+
+    const statement = `INSERT INTO UserData (id, username, email, password, soundOn, darkModeOn, useSwipeOn, best) VALUES (
+      '${user.id}',
+      '${user.username}',
+      '${user.email}',
+      '${user.password}',
+      '${user.soundOn}',
+      '${user.darkModeOn}',
+      '${user.useSwipeOn}',
+      '${user.best}'
+    );`
+
     db.query(statement, (error, result) => {
 
       if (error) {
         reject({
-          status: 'error',
-          details: error
-        })
-      } else {
+          code: 400,
+          message: error.sqlMessage
+        });
+      }
+
+      if (result) {
         resolve({
-          status: 'ok',
-          details: result
+          code: 201,
+          message: 'User created.'
         });
       }
 
@@ -40,35 +57,40 @@ const createUser = (user) => {
   });
 }
 
-const readUser = (user) => {
+const logInUser = (user) => {
   return new Promise((resolve, reject) => {
     const statement = `SELECT * FROM UserData WHERE email = '${user.email}';`
     db.query(statement, (error, result) => {
 
       if (error) {
         reject({
-          status: 'error',
-          details: error
+          code: 400,
+          message: error.sqlMessage
+        });
+      }
+
+      if (result.length === 0) {
+        reject({
+          code: 404,
+          message: 'User not found.'
         })
-      } else if (result.length > 0) {
-        if (result[0].password === user.password) {
-          resolve({
-            status: 'email found. passwords match.',
-            details: result
-          });
-        } else {
-          resolve({
-            status: 'email found. passwords DO NOT match.',
-          });
-        }
-      } else {
+      }
+
+      if (result.length > 0 && (result[0].password !== user.password)) {
+        reject({
+          code: 400,
+          message: 'Passwords do not match.'
+        });
+      }
+
+      if (result.length > 0 && (result[0].password === user.password)) {
         resolve({
-          status: 'email NOT found',
+          code: 200,
+          message: 'Passwords match.'
         });
       }
 
     });
-
   });
 }
 
@@ -80,9 +102,29 @@ const deleteUser = () => {
 
 }
 
+const findUser = (user) => {
+  return new Promise((resolve, reject) => {
+    const statement = `SELECT * FROM UserData WHERE email = '${user.email}';`
+    db.query(statement, (error, result) => {
+      if (error || (result.length === 0)) {
+        reject({
+          message: error || 'User not found in database.'
+        });
+      }
+      if (result.length > 0) {
+        resolve({
+          name: result[0].name,
+          email: result[0].email
+        });
+      }
+    });
+  });
+}
+
 module.exports = {
   createUser,
-  readUser,
+  logInUser,
+  findUser,
   updateUser,
   deleteUser
 }
