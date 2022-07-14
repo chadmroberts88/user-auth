@@ -3,6 +3,7 @@ const router = express.Router();
 const Joi = require('joi');
 const bcrypt = require('bcrypt');
 const Users = require('../models/UserModel');
+const auth = require('../middleware/AuthMiddleware');
 
 router.use(express.json());
 
@@ -32,14 +33,6 @@ const validateUser = (user) => {
   return schema.validate(user);
 }
 
-const validateCredentials = (user) => {
-  const schema = Joi.object({
-    email: Joi.string().email().required(),
-    password: Joi.string().required()
-  });
-  return schema.validate(user);
-}
-
 
 /*
 METHOD: POST
@@ -60,7 +53,7 @@ REQUEST BODY:
 RESPONSES:
 
   201, Resource created:
-    - userData
+    - user
   
   400, Bad request:
     - validation failed
@@ -74,12 +67,12 @@ router.post('/', async (req, res) => {
   const { error, value } = validateNewUser(req.body);
   if (error) return res.status(400).json({ message: error.details[0].message });
 
-  const salt = await bcrypt.genSalt(10);
-  value.password = await bcrypt.hash(value.password, salt);
-
   try {
+    const salt = await bcrypt.genSalt(10);
+    value.password = await bcrypt.hash(value.password, salt);
     const result = await Users.createUser(value);
-    if (result) return res.status(result.code).json(result.data);
+    const token = Users.generateAuthToken(result.data.id);
+    return res.header('x-auth-token', token).status(result.code).json(result.data);
   } catch (error) {
     return res.status(error.code).json({ message: error.message });
   }
@@ -117,14 +110,14 @@ RESPONSES:
   
 */
 
-router.patch('/:id', async (req, res) => {
+router.patch('/', auth, async (req, res) => {
 
-  const { id } = req.params;
+  const id = req.id;
   const { error, value } = validateUser(req.body);
   if (error) return res.status(400).json({ message: error.details[0].message });
 
   try {
-    const result = await Users.updateUserData(id, value);
+    const result = await Users.updateUser(id, value);
     return res.status(result.code).json(result.data);
   } catch (error) {
     return res.status(error.code).json({ message: error.message });
@@ -185,12 +178,12 @@ RESPONSES:
   
 */
 
-router.get('/best/:qty', async (req, res) => {
+router.get('/leaders/:qty', async (req, res) => {
 
   const { qty } = req.params;
 
   try {
-    const result = await Users.getBest(qty);
+    const result = await Users.readLeaders(qty);
     return res.status(result.code).json(result.data);
   } catch (error) {
     return res.status(error.code).json({ message: error.message });
@@ -222,60 +215,11 @@ router.get('/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
-    const result = await Users.getUser(id);
+    const result = await Users.readUser(id);
     return res.status(result.code).json(result.data);
   } catch (error) {
     return res.status(error.code).json({ message: error.message });
   }
-});
-
-
-/*
-METHOD: POST
-ROUTE: /api/logins
-REQUEST BODY:
-
-  { 
-    email:
-    password:
-  }
-
-RESPONSES:
-
-  200,Ok:
-
-    { 
-      username: 
-      email:
-      password:
-      soundOn:
-      darkModeOn:
-      useSwipeOn:
-      best: 
-      rank: 
-      photo:
-    }
-  
-  400, Bad request:
-    - SQL query failed
-    - passwords do not match
-
-  404, Resource not found:
-    - user not found
-*/
-
-router.post('/auth', async (req, res) => {
-
-  const { error, value } = validateCredentials(req.body);
-  if (error) return res.status(400).json({ message: error.details[0].message });
-
-  try {
-    const result = await Users.authenticateUser(value);
-    return res.status(result.code).json(result.data);
-  } catch (error) {
-    return res.status(error.code).json({ message: error.message });
-  }
-
 });
 
 module.exports = router;
