@@ -1,9 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const Joi = require('joi');
+const bcrypt = require('bcrypt');
 const Users = require('../models/UserModel');
 
-const validateNewUser = (user) => {
+router.use(express.json());
+
+const validateNewUser = (newUser) => {
   const schema = Joi.object({
     username: Joi.string().min(5).required(),
     email: Joi.string().email().required(),
@@ -13,10 +16,23 @@ const validateNewUser = (user) => {
     useSwipeOn: Joi.number().integer().max(1).min(0).required(),
     best: Joi.number().integer().min(0).required()
   });
+  return schema.validate(newUser);
+}
+
+const validateUser = (user) => {
+  const schema = Joi.object({
+    username: Joi.string().min(5),
+    email: Joi.string().email(),
+    password: Joi.string(),
+    soundOn: Joi.number().integer().max(1).min(0),
+    darkModeOn: Joi.number().integer().max(1).min(0),
+    useSwipeOn: Joi.number().integer().max(1).min(0),
+    best: Joi.number().integer().min(0)
+  });
   return schema.validate(user);
 }
 
-const validateLogin = (user) => {
+const validateCredentials = (user) => {
   const schema = Joi.object({
     email: Joi.string().email().required(),
     password: Joi.string().required()
@@ -24,50 +40,10 @@ const validateLogin = (user) => {
   return schema.validate(user);
 }
 
-const validateUsername = (user) => {
-  const schema = Joi.object({
-    email: Joi.string().email().required(),
-    username: Joi.string().min(5).required()
-  });
-  return schema.validate(user);
-}
-
-const validatePassword = (user) => {
-  const schema = Joi.object({
-    email: Joi.string().email().required(),
-    password: Joi.string().required()
-  });
-  return schema.validate(user);
-}
-
-const validateEmail = (user) => {
-  const schema = Joi.object({
-    email: Joi.string().email().required(),
-    newEmail: Joi.string().email().required()
-  });
-  return schema.validate(user);
-}
-
-const validateSettings = (user) => {
-  const schema = Joi.object({
-    email: Joi.string().email().required(),
-    soundOn: Joi.number().integer().max(1).min(0).required(),
-    darkModeOn: Joi.number().integer().max(1).min(0).required(),
-    useSwipeOn: Joi.number().integer().max(1).min(0).required()
-  });
-  return schema.validate(user);
-}
-
-const validateDelete = (user) => {
-  const schema = Joi.object({
-    email: Joi.string().email().required()
-  });
-  return schema.validate(user);
-}
 
 /*
 METHOD: POST
-ROUTE: /api/users/register
+ROUTE: /api/users/
 REQUEST BODY:
 
   { 
@@ -84,39 +60,179 @@ REQUEST BODY:
 RESPONSES:
 
   201, Resource created:
-    - user created
+    - userData
   
   400, Bad request:
     - validation failed
     - SQL query failed
+    - user not created
 
 */
 
-router.post('/register', async (req, res) => {
+router.post('/', async (req, res) => {
 
   const { error, value } = validateNewUser(req.body);
-  if (error) return res.status(400).send({ message: error.details[0].message });
+  if (error) return res.status(400).json({ message: error.details[0].message });
+
+  const salt = await bcrypt.genSalt(10);
+  value.password = await bcrypt.hash(value.password, salt);
 
   try {
-    const result = await Users.createUser({
-      username: req.body.username,
-      email: req.body.email,
-      password: req.body.password,
-      soundOn: req.body.soundOn,
-      darkModeOn: req.body.darkModeOn,
-      useSwipeOn: req.body.useSwipeOn,
-      best: req.body.best
-    });
-    if (result) return res.status(result.code).send(result.message);
+    const result = await Users.createUser(value);
+    if (result) return res.status(result.code).json(result.data);
   } catch (error) {
-    return res.status(error.code).send(error.message);
+    return res.status(error.code).json({ message: error.message });
+  }
+
+});
+
+
+/*
+METHOD: PATCH
+ROUTE: /api/users/:id
+REQUEST BODY:
+
+  { 
+    username: 
+    email:
+    password:
+    soundOn:
+    darkModeOn:
+    useSwipeOn:
+    best: 
+    photo:
+  }
+
+RESPONSES:
+
+  200, Ok:
+    - updated userData
+  
+  400, Bad Request:
+    - validation failed
+    - SQL query failed
+  
+  404, Resource not found:
+    - user not found
+  
+*/
+
+router.patch('/:id', async (req, res) => {
+
+  const { id } = req.params;
+  const { error, value } = validateUser(req.body);
+  if (error) return res.status(400).json({ message: error.details[0].message });
+
+  try {
+    const result = await Users.updateUserData(id, value);
+    return res.status(result.code).json(result.data);
+  } catch (error) {
+    return res.status(error.code).json({ message: error.message });
   }
 
 });
 
 /*
+METHOD: DELETE
+ROUTE: /api/users/:id
+REQUEST BODY:
+
+  None
+
+RESPONSES:
+
+  200, Ok:
+    - user deleted
+  
+  400, Bad Request:
+    - SQL query failed
+  
+  404, Resource not found:
+    - user not found
+  
+*/
+
+router.delete('/:id', async (req, res) => {
+
+  const { id } = req.params;
+
+  try {
+    const result = await Users.deleteUser(id);
+    return res.status(result.code).json(result.message);
+  } catch (error) {
+    return res.status(error.code).json({ message: error.message });
+  }
+
+});
+
+/*
+METHOD: GET
+ROUTE: /api/users/best/:qty
+REQUEST BODY:
+
+  None
+
+RESPONSES:
+
+  200, Ok:
+    - list of users
+  
+  400, Bad Request:
+    - SQL query failed
+  
+  404, Resource not found:
+    - no users found
+  
+*/
+
+router.get('/best/:qty', async (req, res) => {
+
+  const { qty } = req.params;
+
+  try {
+    const result = await Users.getBest(qty);
+    return res.status(result.code).json(result.data);
+  } catch (error) {
+    return res.status(error.code).json({ message: error.message });
+  }
+});
+
+/*
+METHOD: GET
+ROUTE: /api/users/:id
+REQUEST BODY:
+
+  None
+
+RESPONSES:
+
+  200, Ok:
+    - list of users
+  
+  400, Bad Request:
+    - SQL query failed
+  
+  404, Resource not found:
+    - no users found
+  
+*/
+
+router.get('/:id', async (req, res) => {
+
+  const { id } = req.params;
+
+  try {
+    const result = await Users.getUser(id);
+    return res.status(result.code).json(result.data);
+  } catch (error) {
+    return res.status(error.code).json({ message: error.message });
+  }
+});
+
+
+/*
 METHOD: POST
-ROUTE: /api/users/login
+ROUTE: /api/logins
 REQUEST BODY:
 
   { 
@@ -148,257 +264,16 @@ RESPONSES:
     - user not found
 */
 
-router.post('/login', async (req, res) => {
+router.post('/auth', async (req, res) => {
 
-  const { error, value } = validateLogin(req.body);
-  if (error) return res.status(400).send({ message: error.details[0].message });
-
-  try {
-    const result = await Users.logInUser({
-      email: req.body.email,
-      password: req.body.password
-    });
-    return res.status(result.code).send(result.data);
-  } catch (error) {
-    return res.status(error.code).send(error.message);
-  }
-
-});
-
-/*
-METHOD: PUT
-ROUTE: /api/users/username
-REQUEST BODY:
-
-  { 
-    email:
-    username:
-  }
-
-RESPONSES:
-
-  200, Ok:
-    - username updated
-  
-  400, Bad Request:
-    - validation failed
-    - SQL query failed
-  
-  404, Resource not found:
-    - user not found
-  
-*/
-
-router.put('/username', async (req, res) => {
-
-  const { error } = validateUsername(req.body);
-  if (error) return res.status(400).send({ message: error.details[0].message });
+  const { error, value } = validateCredentials(req.body);
+  if (error) return res.status(400).json({ message: error.details[0].message });
 
   try {
-    const result = await Users.updateUsername({
-      email: req.body.email,
-      username: req.body.username
-    });
-    return res.status(result.code).send(result.message);
+    const result = await Users.authenticateUser(value);
+    return res.status(result.code).json(result.data);
   } catch (error) {
-    return res.status(error.code).send(error.message);
-  }
-
-});
-
-/*
-METHOD: PUT
-ROUTE: /api/users/password
-REQUEST BODY:
-
-  { 
-    email:
-    password:
-  }
-
-RESPONSES:
-
-  200, Ok:
-    - password updated
-  
-  400, Bad Request:
-    - validation failed
-    - SQL query failed
-  
-  404, Resource not found:
-    - user not found
-  
-*/
-
-router.put('/password', async (req, res) => {
-
-  const { error } = validatePassword(req.body);
-  if (error) return res.status(400).send({ message: error.details[0].message });
-
-  try {
-    const result = await Users.updatePassword({
-      email: req.body.email,
-      password: req.body.password
-    });
-    return res.status(result.code).send(result.message);
-  } catch (error) {
-    return res.status(error.code).send(error.message);
-  }
-
-});
-
-/*
-METHOD: PUT
-ROUTE: /api/users/email
-REQUEST BODY:
-
-  { 
-    email:
-    newEmail:
-  }
-
-RESPONSES:
-
-  200, Ok:
-    - email updated
-  
-  400, Bad Request:
-    - validation failed
-    - SQL query failed
-  
-  404, Resource not found:
-    - user not found
-  
-*/
-
-router.put('/email', async (req, res) => {
-
-  const { error } = validateEmail(req.body);
-  if (error) return res.status(400).send({ message: error.details[0].message });
-
-  try {
-    const result = await Users.updateEmail({
-      email: req.body.email,
-      newEmail: req.body.newEmail
-    });
-    return res.status(result.code).send(result.message);
-  } catch (error) {
-    return res.status(error.code).send(error.message);
-  }
-
-});
-
-/*
-METHOD: PUT
-ROUTE: /api/users/settings
-REQUEST BODY:
-
-  { 
-    email:
-    soundOn:
-    darkModeOn:
-    useSwipeOn:
-  }
-
-RESPONSES:
-
-  200, Ok:
-    - settings updated
-  
-  400, Bad Request:
-    - validation failed
-    - SQL query failed
-  
-  404, Resource not found:
-    - user not found
-  
-*/
-router.put('/settings', async (req, res) => {
-
-  const { error } = validateSettings(req.body);
-  if (error) return res.status(400).send({ message: error.details[0].message });
-
-  try {
-    const result = await Users.updateSettings({
-      email: req.body.email,
-      soundOn: req.body.soundOn,
-      darkModeOn: req.body.darkModeOn,
-      useSwipeOn: req.body.useSwipeOn
-    });
-    return res.status(result.code).send(result.message);
-  } catch (error) {
-    return res.status(error.code).send(error.message);
-  }
-});
-
-/*
-METHOD: GET
-ROUTE: /api/users/leaderboard
-REQUEST BODY:
-
-  None
-
-RESPONSES:
-
-  200, Ok:
-    
-    [{
-      username:
-      best:
-    }...]
-  
-  400, Bad Request:
-    - SQL query failed
-  
-  404, Resource not found:
-    - no users found
-  
-*/
-
-router.get('/leaderboard', async (req, res) => {
-  try {
-    const result = await Users.getLeaderboardList(50);
-    return res.status(result.code).send(result.data);
-  } catch (error) {
-    return res.status(error.code).send(error.message);
-  }
-});
-
-/*
-METHOD: DELETE
-ROUTE: /api/users/delete
-REQUEST BODY:
-
-  { 
-    email:
-  }
-
-RESPONSES:
-
-  200, Ok:
-    - user deleted
-  
-  400, Bad Request:
-    - validation failed
-    - SQL query failed
-  
-  404, Resource not found:
-    - user not found
-  
-*/
-
-router.delete('/delete', async (req, res) => {
-
-  const { error } = validateDelete(req.body);
-  if (error) return res.status(400).send({ message: error.details[0].message });
-
-  try {
-    const result = await Users.deleteUser({
-      email: req.body.email
-    });
-    return res.status(result.code).send(result.message);
-  } catch (error) {
-    return res.status(error.code).send(error.message);
+    return res.status(error.code).json({ message: error.message });
   }
 
 });
