@@ -1,7 +1,7 @@
 const mysql = require('mysql2');
 const dotenv = require('dotenv');
-const { v4: uuidv4 } = require('uuid');
 const jwt = require('jsonwebtoken');
+const { v4: uuidv4 } = require('uuid');
 
 dotenv.config({ path: './.env' });
 
@@ -18,20 +18,26 @@ db.connect((error) => {
   console.log("UserModel connected to MySQL!");
 });
 
-const createUser = (userData) => {
+// Generate JWT for User
+
+const generateAuthToken = (id) => {
+  return jwt.sign({ id: id }, process.env.JWT_KEY);
+}
+
+// CREATE Operations
+
+const createUser = (user) => {
   return new Promise((resolve, reject) => {
-    userData.id = uuidv4();
+    user.id = uuidv4();
 
     const fields = [];
     const values = [];
-    Object.entries(userData).forEach((entry) => {
-      const [key, value] = entry;
+    for (let key in user) {
       fields.push(` ${key}`);
-      values.push(` '${value}'`);
-    });
+      values.push(` '${user[key]}'`);
+    }
 
-    const statement = `INSERT INTO UserData (${fields}) VALUES (${values});`
-
+    const statement = `INSERT INTO UserData (${fields}) VALUES (${values});`;
     db.query(statement, (error, result) => {
 
       if (error) {
@@ -41,18 +47,18 @@ const createUser = (userData) => {
         });
       }
 
-      if (result.affectedRows === 0) {
+      if (!result) {
         reject({
           code: 400,
           message: 'User not created.'
         })
       }
 
-      if (result.affectedRows !== 0) {
+      if (result) {
         resolve({
           code: 201,
           message: 'User created.',
-          data: userData
+          data: user
         });
       }
 
@@ -60,14 +66,102 @@ const createUser = (userData) => {
   });
 }
 
-const updateUserData = (id, userData) => {
+// READ Operations
+
+const readUser = (id) => {
+  return new Promise((resolve, reject) => {
+    const statement = `SELECT * FROM UserData WHERE id = '${id}';`;
+    db.query(statement, async (error, result) => {
+
+      if (error) {
+        reject({
+          code: 400,
+          message: error.sqlMessage
+        });
+      }
+
+      if (!result) {
+        reject({
+          code: 404,
+          message: 'User not found.'
+        });
+      }
+
+      if (result) {
+        result[0].rank = await readRank(result[0].username);
+        resolve({
+          code: 200,
+          message: 'User data retrieved.',
+          data: result[0]
+        });
+      }
+
+    });
+
+  });
+}
+
+const readRank = (username) => {
+  return new Promise((resolve, reject) => {
+    const statement = `SELECT username, best FROM UserData ORDER BY best DESC, username ASC;`;
+    db.query(statement, (error, result) => {
+
+      if (error) {
+        reject(error);
+      }
+
+      if (!result) {
+        reject('No result.');
+      }
+
+      if (result) {
+        resolve(result.map(object => object.username).indexOf(username));
+      }
+
+    });
+  })
+}
+
+const readLeaders = (qty) => {
+  return new Promise((resolve, reject) => {
+    const statement = `SELECT username, best FROM UserData ORDER BY best DESC, username ASC LIMIT ${qty};`;
+    db.query(statement, (error, result) => {
+
+      if (error) {
+        reject({
+          code: 400,
+          message: error.sqlMessage
+        });
+      }
+
+      if (result.length === 0) {
+        reject({
+          code: 404,
+          message: 'No users found.'
+        });
+      }
+
+      if (result.length > 0) {
+        resolve({
+          code: 200,
+          message: 'List retrieved.',
+          data: result
+        });
+      }
+
+    })
+  });
+}
+
+// UPDATE Operations
+
+const updateUser = (id, user) => {
   return new Promise((resolve, reject) => {
 
     const set = [];
-    Object.entries(userData).forEach((entry) => {
-      const [key, value] = entry;
-      set.push(` ${key} = '${value}'`);
-    });
+    for (let key in user) {
+      set.push(` ${key} = '${user[key]}'`);
+    }
 
     const statement = `UPDATE UserData SET${set} WHERE id = '${id}';`;
 
@@ -91,7 +185,7 @@ const updateUserData = (id, userData) => {
         resolve({
           code: 200,
           message: 'User data updated.',
-          data: userData
+          data: user
         });
       }
 
@@ -99,6 +193,8 @@ const updateUserData = (id, userData) => {
 
   });
 }
+
+// DELETE Operations
 
 const deleteUser = (id) => {
   return new Promise((resolve, reject) => {
@@ -133,134 +229,11 @@ const deleteUser = (id) => {
   });
 }
 
-const authenticateUser = (user) => {
-  return new Promise((resolve, reject) => {
-    const statement = `SELECT id, password FROM UserData WHERE email = '${user.email}';`
-    db.query(statement, (error, result) => {
-
-      if (error) {
-        reject({
-          code: 400,
-          message: error.sqlMessage
-        });
-      }
-
-      if (!result) {
-        reject({
-          code: 404,
-          message: 'User not found.'
-        });
-      }
-
-      if (result && (result[0].password !== user.password)) {
-        reject({
-          code: 400,
-          message: 'Passwords do not match.'
-        });
-      }
-
-      if (result && (result[0].password === user.password)) {
-        resolve({
-          code: 200,
-          message: 'Passwords match.',
-          data: { id: result[0].id }
-        });
-      }
-
-    });
-  });
-}
-
-const getBest = (qty) => {
-  return new Promise((resolve, reject) => {
-    const statement = `SELECT username, best FROM UserData ORDER BY best DESC, username ASC LIMIT ${qty};`;
-    db.query(statement, (error, result) => {
-
-      if (error) {
-        reject({
-          code: 400,
-          message: error.sqlMessage
-        });
-      }
-
-      if (!result) {
-        reject({
-          code: 404,
-          message: 'No users found.'
-        });
-      }
-
-      if (result) {
-        resolve({
-          code: 200,
-          message: 'List retrieved.',
-          data: result
-        });
-      }
-
-    })
-  });
-}
-
-const getUser = (id) => {
-  return new Promise((resolve, reject) => {
-    const statement = `SELECT * FROM UserData WHERE id = '${id}';`;
-    db.query(statement, async (error, result) => {
-
-      if (error) {
-        reject({
-          code: 400,
-          message: error.sqlMessage
-        });
-      }
-
-      if (!result) {
-        reject({
-          code: 404,
-          message: 'User not found.'
-        });
-      }
-
-      if (result) {
-        result[0].rank = await getRank(result[0].username);
-        resolve({
-          code: 200,
-          message: 'User data retrieved.',
-          data: result[0]
-        });
-      }
-
-    });
-
-  });
-}
-
-const getRank = (username) => {
-  return new Promise((resolve, reject) => {
-    const statement = `SELECT username, best FROM UserData ORDER BY best DESC, username ASC;`;
-    db.query(statement, (error, result) => {
-
-      if (error) {
-        reject(error);
-      }
-
-      if (!result) {
-        reject('No result.');
-      }
-
-      if (result) {
-        resolve(result.map(object => object.username).indexOf(username));
-      }
-
-    });
-  })
-}
-
 module.exports = {
+  generateAuthToken,
   createUser,
-  updateUserData,
-  deleteUser,
-  authenticateUser,
-  getBest,
-  getUser
+  readUser,
+  readLeaders,
+  updateUser,
+  deleteUser
 }
