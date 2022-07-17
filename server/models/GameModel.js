@@ -1,52 +1,74 @@
-const mysql = require('mysql2');
+const Sequelize = require('sequelize');
+const db = require('../utils/Database');
 const dotenv = require('dotenv');
 
 dotenv.config({ path: './.env' });
 
-const db = mysql.createConnection({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_DATABASE
-})
-
-db.connect((error) => {
-  if (error) throw error;
-  console.log("GameModel connected to MySQL!");
+const Game = db.define('Games', {
+  id: {
+    type: Sequelize.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    allowNull: false,
+    unique: true
+  },
+  score: {
+    type: Sequelize.INTEGER,
+    allowNull: false,
+  },
+  multiplier: {
+    type: Sequelize.INTEGER,
+    allowNull: false,
+  },
+  tileIds: {
+    type: Sequelize.INTEGER,
+    allowNull: false,
+  },
+  tiles: {
+    type: Sequelize.JSON,
+    allowNull: false,
+  },
+  account_id: {
+    type: Sequelize.UUID,
+    allowNull: false,
+    unique: true
+  }
 });
 
-const createGame = () => {
-  return new Promise((resolve, reject) => {
-    resolve('resolved');
-    reject('rejected');
-  });
+// READ Operations
+
+const readGame = async (accountId) => {
+  try {
+    await Game.findAll({
+      where: {
+        account_id: accountId
+      }
+    });
+    return;
+  } catch (error) {
+    return error;
+  }
 };
 
-const readGame = () => {
-  return new Promise((resolve, reject) => {
-    resolve('resolved');
-    reject('rejected');
-  });
-};
+// UPDATE Operations
 
-const updateGame = () => {
-  return new Promise((resolve, reject) => {
-    resolve('resolved');
-    reject('rejected');
-  });
-};
-
-const deleteGame = () => {
-  return new Promise((resolve, reject) => {
-    resolve('resolved');
-    reject('rejected');
-  });
+const updateGame = async (accountId, game) => {
+  try {
+    await Game.update({
+      ...game
+    }, {
+      where: {
+        account_id: accountId
+      }
+    });
+    return;
+  } catch (error) {
+    throw error;
+  }
 };
 
 module.exports = {
-  createGame,
+  Game,
   readGame,
-  updateGame,
-  deleteGame
+  updateGame
 }
