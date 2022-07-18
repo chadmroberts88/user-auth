@@ -33,6 +33,14 @@ const Profile = db.define('Profiles', {
     type: Sequelize.INTEGER,
     allowNull: false,
   },
+  fileName: {
+    type: Sequelize.STRING,
+    allowNull: true
+  },
+  photo: {
+    type: Sequelize.TEXT('long'),
+    allowNull: true
+  },
   account_id: {
     type: Sequelize.UUID,
     allowNull: false,
@@ -77,7 +85,9 @@ const readProfile = async (accountId) => {
       darkModeOn: result[0].darkModeOn,
       useSwipeOn: result[0].useSwipeOn,
       best: result[0].best,
-      rank: rank
+      rank: rank,
+      fileName: result[0].fileName,
+      photo: result[0].photo
     };
   } catch (error) {
     return error;
@@ -121,7 +131,9 @@ const updateProfile = async (accountId, profile) => {
         account_id: accountId
       }
     });
-    return;
+    return {
+      ...profile
+    };
   } catch (error) {
     throw error;
   }
