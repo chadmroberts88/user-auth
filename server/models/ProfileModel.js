@@ -40,20 +40,13 @@ const Profile = db.define('Profiles', {
   }
 });
 
-// READ Operations
+// ------ CREATE Operations ------
 
-const readProfile = async (accountId) => {
-  try {
-    await Profile.findAll({
-      where: {
-        account_id: accountId
-      }
-    });
-    return;
-  } catch (error) {
-    return error;
-  }
-}
+/*
+Handled by AccountModel
+*/
+
+// ------ READ Operations ------
 
 const readRank = async (accountId) => {
   try {
@@ -68,27 +61,56 @@ const readRank = async (accountId) => {
   }
 }
 
-const readLeaders = async () => {
+const readProfile = async (accountId) => {
   try {
     const result = await Profile.findAll({
-      attributes: ['username', 'best'],
-      order: [['best', 'DESC'], ['username', 'ASC']]
+      where: {
+        account_id: accountId
+      }
     });
 
-    const leaders = result.map((object) => {
+    const rank = await readRank(accountId);
+
+    return {
+      username: result[0].username,
+      soundOn: result[0].soundOn,
+      darkModeOn: result[0].darkModeOn,
+      useSwipeOn: result[0].useSwipeOn,
+      best: result[0].best,
+      rank: rank
+    };
+  } catch (error) {
+    return error;
+  }
+}
+
+const readLeaders = async (offset, limit) => {
+  try {
+    const { count, rows } = await Profile.findAndCountAll({
+      attributes: ['username', 'best'],
+      order: [['best', 'DESC'], ['username', 'ASC']],
+      offset: offset,
+      limit: limit
+    });
+
+    const leaders = rows.map((object) => {
       return {
         username: object.username,
         best: object.best
       }
     });
 
-    return leaders;
+    return {
+      numRecords: count,
+      leaders: leaders
+    };
+
   } catch (error) {
     throw error;
   }
 }
 
-// UPDATE Operations
+// ------ UPDATE Operations ------
 
 const updateProfile = async (accountId, profile) => {
   try {
@@ -104,6 +126,11 @@ const updateProfile = async (accountId, profile) => {
     throw error;
   }
 }
+
+// ------ DELETE Operations ------
+/*
+Handled by AccountModel
+*/
 
 module.exports = {
   Profile,

@@ -35,22 +35,33 @@ const Game = db.define('Games', {
   }
 });
 
-// READ Operations
+// ------ CREATE Operations ------
+
+/*
+Handled by AccountModel
+*/
+
+// ------ READ Operations ------
 
 const readGame = async (accountId) => {
   try {
-    await Game.findAll({
+    const result = await Game.findAll({
       where: {
         account_id: accountId
       }
     });
-    return;
+    return {
+      score: result[0].score,
+      multiplier: result[0].multiplier,
+      tileIds: result[0].tileIds,
+      tiles: result[0].tiles
+    };
   } catch (error) {
     return error;
   }
 };
 
-// UPDATE Operations
+// ------ UPDATE Operations ------
 
 const updateGame = async (accountId, game) => {
   try {
@@ -66,6 +77,12 @@ const updateGame = async (accountId, game) => {
     throw error;
   }
 };
+
+// ------ DELETE Operations ------
+
+/*
+Handled by AccountModel
+*/
 
 module.exports = {
   Game,

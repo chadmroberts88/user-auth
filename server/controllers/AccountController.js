@@ -4,6 +4,7 @@ const Joi = require('joi');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
+const auth = require('../middleware/AuthMiddleware');
 const Account = require('../models/AccountModel');
 
 dotenv.config({ path: './.env' });
@@ -33,6 +34,14 @@ const validateNewUser = (newUser) => {
   return schema.validate(newUser);
 }
 
+const validateAccount = (account) => {
+  const schema = Joi.object({
+    email: Joi.string().email(),
+    password: Joi.string()
+  });
+  return schema.validate(account);
+}
+
 const validateCredentials = (user) => {
   const schema = Joi.object({
     email: Joi.string().email().required(),
@@ -44,37 +53,14 @@ const validateCredentials = (user) => {
 /*
 METHOD: POST
 ROUTE: /api/account/
-REQUEST BODY:
-
-  { 
-    username: 
-    email:
-    password:
-    soundOn:
-    darkModeOn:
-    useSwipeOn:
-    best: 
-    photo:
-  }
-
-RESPONSES:
-
-  201, Resource created:
-    - user
-  
-  400, Bad request:
-    - validation failed
-
-  500, 
-    - SQL query failed
-    - user not created
-
+REQ: NewUser object
+RES: 200 (User object), 400 (Bad request), 500 (Server error)
 */
 
 router.post('/', async (req, res) => {
 
   const { error, value } = validateNewUser(req.body);
-  if (error) return res.status(400).json(error);
+  if (error) return res.status(400).json({ error: 'Bad request.' });
 
   try {
     const salt = await bcrypt.genSalt(10);
@@ -83,7 +69,51 @@ router.post('/', async (req, res) => {
     const token = Account.generateAuthToken(result.id);
     return res.header('x-auth-token', token).status(200).json(result);
   } catch (error) {
-    return res.status(500).json(error);
+    return res.status(500).json({ error: 'Server error.' });
+  }
+
+});
+
+
+/*
+METHOD: PATCH
+ROUTE: /api/account/
+REQ: Account object
+RES: 200 (Updated), 400 (Bad request), 500 (Server error)
+*/
+
+router.patch('/', auth, async (req, res) => {
+
+  const { error, value } = validateAccount(req.body);
+  if (error) return res.status(400).json({ error: 'Bad request.' });
+
+  try {
+    if (value.password) {
+      const salt = await bcrypt.genSalt(10);
+      value.password = await bcrypt.hash(value.password, salt);
+    }
+    await Account.updateAccount(req.id, value);
+    return res.status(200).json({ result: 'Account updated.' });
+  } catch (error) {
+    return res.status(500).json({ error: 'Server error.' });
+  }
+
+});
+
+/*
+METHOD: DELETE
+ROUTE: /api/account/
+REQ: None
+RES: 200 (Account deleted), 500 (Server error)
+*/
+
+router.delete('/', auth, async (req, res) => {
+
+  try {
+    await Account.deleteAccount(req.id);
+    return res.status(200).json({ message: 'Account deleted.' });
+  } catch (error) {
+    return res.status(500).json({ error: 'Server error.' });
   }
 
 });
@@ -128,7 +158,7 @@ router.post('/auth', async (req, res) => {
   if (error) return res.status(400).json({ message: error.details[0].message });
 
   try {
-    const result = await Auth.authenticateUser(value);
+    const result = await Account.authenticateUser(value);
     const validPass = await bcrypt.compare(value.password, result.data.password);
     if (!validPass) return res.status(400).json({ message: 'Invalid email or password.' });
 

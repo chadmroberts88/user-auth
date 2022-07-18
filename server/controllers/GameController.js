@@ -1,102 +1,69 @@
 const express = require('express');
 const router = express.Router();
 const Joi = require('joi');
-const Games = require('../models/GameModel');
+const Game = require('../models/GameModel');
+const auth = require('../middleware/AuthMiddleware');
+
+const validateGame = (game) => {
+  const schema = Joi.object({
+    score: Joi.number().integer().min(0).required(),
+    multiplier: Joi.number().integer().min(1).required(),
+    tileIds: Joi.number().integer().min(0).required(),
+    tiles: Joi.string().required()
+  });
+  return schema.validate(game);
+}
+
+// ------ POST Requests ------
 
 /*
-METHOD: POST
-ROUTE: /api/games/create
-REQUEST BODY:
-  { 
-    username:
-    tiles:
-    tileIds:
-    multiplier:
-    score:
-  }
-
-RESPONSES:
-  201 - Created:
-    { message: 'Game created sucessfully.' }
-  
-  400 - Bad Request:
-    { message: 'Game not created.' }
-  
-  404 - Not Found:
-    {message: 'User not found in database.'}
+Handled by AccountModel
 */
 
-router.post('/create', (req, res) => {
-  res.send({ message: 'Create request recieved...' });
-});
+// ------ GET Requests ------
 
 /*
 METHOD: GET
-ROUTE: /api/games/load
-REQUEST BODY:
-  { 
-    username:
-  }
-
-RESPONSES:
-  200 - Ok:
-    {
-      tiles:
-      tileIds:
-      multiplier:
-      score:
-    }
-  
-  404 - Not Found:
-    {message: 'User not found in database.'}
+ROUTE: /api/game/
+REQ: Header: id: x-auth-token
+RES: 200 (Game object), 500 (Server error)
 */
 
-router.get('/load', (req, res) => {
-  res.send({ message: 'Load request recieved...' });
+router.get('/', auth, async (req, res) => {
+  try {
+    const result = await Game.readGame(req.id);
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error.' });
+  }
 });
+
+// ------ PATCH Requests ------
 
 /*
-METHOD: PUT
-ROUTE: /api/games/update
-REQUEST BODY:
-  { 
-    username:
-    tiles:
-    tileIds:
-    multiplier:
-    score:
-  }
-
-RESPONSES:
-  200 - Ok:
-    { message: 'Game updated.'}
-  
-  404 - Not Found:
-    {message: 'User not found in database.'}
+METHOD: PATCH
+ROUTE: /api/game/
+REQ: 
+RES: 200 (Game updated), 400, (Bad request), 500 (Server error)
 */
 
-router.put('/update', (req, res) => {
-  res.send({ message: 'Update request recieved...' });
+router.patch('/', auth, async (req, res) => {
+
+  const { error, value } = validateGame(req.body);
+  if (error) return res.status(400).json({ message: 'Bad request.' });
+
+  try {
+    await Game.updateGame(req.id, value);
+    return res.status(200).json({ message: 'Game updated.' });
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error.' });
+  }
 });
+
+// ------ DELETE Requests ------
 
 /*
-METHOD: DELETE
-ROUTE: /api/games/delete
-REQUEST BODY:
-  { 
-    username:
-  }
-
-RESPONSES:
-  200 - Ok:
-    { message: 'Game deleted.'}
-  
-  404 - Not Found:
-    {message: 'User not found in database.'}
+Handled by AccountModel
 */
-
-router.delete('/delete', (req, res) => {
-  res.send({ message: 'Delete request recieved...' });
-});
 
 module.exports = router;
