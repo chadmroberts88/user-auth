@@ -4,6 +4,7 @@ const Joi = require('joi');
 const bcrypt = require('bcrypt');
 const Profile = require('../models/ProfileModel');
 const auth = require('../middleware/AuthMiddleware');
+const upload = require('../middleware/UploadMiddleware');
 
 router.use(express.json());
 
@@ -72,16 +73,25 @@ REQ: Profile object
 RES: 200 (Account updated), 400 (Bad request), 500 (Server error)
 */
 
-router.patch('/', auth, async (req, res) => {
+router.patch('/', auth, upload.single('photo'), async (req, res) => {
 
   const { error, value } = validateProfile(req.body);
   if (error) return res.status(400).json({ error: 'Bad request.' });
 
   try {
-    await Profile.updateProfile(req.id, value);
-    return res.status(200).json({ result: 'Profile updated.' });
+
+    if (req.file) {
+      value.fileName = req.file.originalname;
+      value.photo = req.file.buffer.toString('base64');
+    } else {
+      value.fileName = null;
+      value.photo = null;
+    }
+
+    const result = await Profile.updateProfile(req.id, value);
+    return res.status(200).json(result);
   } catch (error) {
-    return res.status(500).json({ error: 'Server error.' });
+    return res.status(500).json({ message: 'Server error.' });
   }
 });
 

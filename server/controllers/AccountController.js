@@ -4,8 +4,9 @@ const Joi = require('joi');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
-const auth = require('../middleware/AuthMiddleware');
 const Account = require('../models/AccountModel');
+const auth = require('../middleware/AuthMiddleware');
+const upload = require('../middleware/UploadMiddleware');
 
 dotenv.config({ path: './.env' });
 
@@ -57,12 +58,21 @@ REQ: NewUser object
 RES: 200 (User object), 400 (Bad request), 500 (Server error)
 */
 
-router.post('/', async (req, res) => {
+router.post('/', upload.single('photo'), async (req, res) => {
 
   const { error, value } = validateNewUser(req.body);
   if (error) return res.status(400).json({ error: 'Bad request.' });
 
   try {
+
+    if (req.file) {
+      value.fileName = req.file.originalname;
+      value.photo = req.file.buffer.toString('base64');
+    } else {
+      value.fileName = null;
+      value.photo = null;
+    }
+
     const salt = await bcrypt.genSalt(10);
     value.account.password = await bcrypt.hash(value.account.password, salt);
     const result = await Account.createAccount(value);
@@ -73,7 +83,6 @@ router.post('/', async (req, res) => {
   }
 
 });
-
 
 /*
 METHOD: PATCH

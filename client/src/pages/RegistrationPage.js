@@ -8,38 +8,40 @@ import Submit from '../components/Submit'
 
 const RegistrationPage = () => {
 
-  const { name, setName, email, setEmail, password, setPassword } = useContext(UserAuthContext);
+  const { name, setName, email, photo, setEmail, password, setPassword, setPhoto } = useContext(UserAuthContext);
   const navigate = useNavigate();
 
   const registerUser = async (event) => {
 
     event.preventDefault();
-    const response = await fetch('http://localhost:3000/api/register', {
+    const formData = new FormData();
+    formData.append("name", name);
+    formData.append('email', email);
+    formData.append('password', password);
+    formData.append('photo', photo);
 
-      method: 'POST',
+    // const response = await fetch('http://localhost:3000/api/register', {
 
-      headers: {
-        'Content-Type': 'application/json'
-      },
+    //   method: 'POST',
 
-      body: JSON.stringify({
-        name: name,
-        email: email,
-        password: password
-      })
+    //   headers: {
+    //     'Content-Type': 'multipart/formdata'
+    //   },
 
-    })
+    //   body: formData
 
-    const recievedData = await response.json();
+    // })
 
-    console.log("response:", recievedData);
+    // const recievedData = await response.json();
 
-    if (recievedData.status === 'ok') {
-      console.log("STATUS READ AS OK");
-      navigate('/');
-    } else {
-      alert('Nav error');
-    }
+    // console.log("response:", recievedData);
+
+    // if (recievedData.status === 'ok') {
+    //   console.log("STATUS READ AS OK");
+    //   navigate('/');
+    // } else {
+    //   alert('Nav error');
+    // }
 
   }
 
@@ -63,6 +65,10 @@ const RegistrationPage = () => {
         onChange={(e) => setPassword(e.target.value)}
         type='password'
         placeholder='Password'
+      />
+      <Input
+        onChange={(e) => setPhoto(e.target.files[0])}
+        type='file'
       />
       <Submit
         value='Register'

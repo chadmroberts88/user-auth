@@ -6,6 +6,7 @@ const UserAuthProvider = ({ children }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [photo, setPhoto] = useState(new File([], ''));
 
   return (
     <UserAuthContext.Provider
@@ -13,9 +14,11 @@ const UserAuthProvider = ({ children }) => {
         name,
         email,
         password,
+        photo,
         setName,
         setEmail,
-        setPassword
+        setPassword,
+        setPhoto
       }}
     >
       {children}
