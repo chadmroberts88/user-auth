@@ -3,14 +3,20 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App'
-import UserAuthProvider from './context/UserAuthContext'
+import AccountProvider from './context/AccountContext'
+import ProfileProvider from './context/ProfileContext'
+import GameProvider from './context/GameContext'
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
 root.render(
   <BrowserRouter>
-    <UserAuthProvider>
-      <App />
-    </UserAuthProvider>
+    <AccountProvider>
+      <ProfileProvider>
+        <GameProvider>
+          <App />
+        </GameProvider>
+      </ProfileProvider>
+    </AccountProvider>
   </BrowserRouter>
 );

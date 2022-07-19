@@ -44,30 +44,9 @@ Account.hasOne(Game, {
 
 // Generate JWT for Account
 
-const generateAuthToken = (accountId) => {
-  return jwt.sign({ id: accountId }, process.env.JWT_KEY);
+const generateAuthToken = (id) => {
+  return jwt.sign({ id: id }, process.env.JWT_KEY);
 };
-
-const testUser = {
-  account: {
-    email: 'dave@testemail.com',
-    password: 'somepassword',
-  },
-
-  profile: {
-    username: 'Dave',
-    soundOn: 'true',
-    darkModeOn: 'true',
-    useSwipeOn: 'false',
-    best: 80,
-  },
-  game: {
-    score: 456,
-    multiplier: 1,
-    tileIds: 9,
-    tiles: ['sometiles']
-  }
-}
 
 // CREATE Operations
 
@@ -77,15 +56,25 @@ const createAccount = async (user) => {
     const result = await db.transaction(async (trans) => {
 
       const account = await Account.create({
-        ...user.account
+        email: user.email,
+        password: user.email
       }, { transaction: trans });
 
       const profile = await account.createProfile({
-        ...user.profile
+        username: user.username,
+        soundOn: user.soundOn,
+        darkModeOn: user.darkModeOn,
+        useSwipeOn: user.useSwipeOn,
+        best: user.best,
+        fileName: user.fileName,
+        photo: user.photo
       }, { transaction: trans });
 
       const game = await account.createGame({
-        ...user.game
+        score: user.score,
+        multiplier: user.multiplier,
+        tileIds: user.tileIds,
+        tiles: user.tiles
       }, { transaction: trans });
 
       const newUser = {
@@ -98,7 +87,9 @@ const createAccount = async (user) => {
           soundOn: profile.soundOn,
           darkModeOn: profile.darkModeOn,
           useSwipeOn: profile.useSwipeOn,
-          best: profile.best
+          best: profile.best,
+          fileName: profile.fileName,
+          photo: profile.photo
         },
         game: {
           score: game.score,
@@ -117,6 +108,25 @@ const createAccount = async (user) => {
 }
 
 // READ Operations
+
+const authenticateAccount = async (email) => {
+  try {
+    const result = await Account.findAll({
+      where: {
+        email: email
+      }
+    });
+
+    console.log(result);
+
+    return {
+      id: result[0].id,
+      password: result[0].password
+    };
+  } catch (error) {
+    throw error;
+  }
+}
 
 const readAccount = async (id) => {
   try {
@@ -163,36 +173,7 @@ const deleteAccount = async (id) => {
 }
 
 
-const authenticateUser = (user) => {
-  return new Promise((resolve, reject) => {
-    const statement = `SELECT id, password FROM UserData WHERE email = '${user.email}';`
-    db.query(statement, (error, result) => {
 
-      if (error) {
-        reject({
-          code: 400,
-          message: error.sqlMessage
-        });
-      }
-
-      if (!result) {
-        reject({
-          code: 404,
-          message: 'User not found.'
-        });
-      }
-
-      if (result) {
-        resolve({
-          code: 200,
-          message: 'User found.',
-          data: result[0]
-        });
-      }
-
-    });
-  });
-}
 
 module.exports = {
   generateAuthToken,
@@ -200,5 +181,5 @@ module.exports = {
   readAccount,
   updateAccount,
   deleteAccount,
-  authenticateUser
+  authenticateAccount
 }

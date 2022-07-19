@@ -1,5 +1,5 @@
 import React, { useContext } from 'react'
-import { UserAuthContext } from '../context/UserAuthContext'
+import { AccountContext } from '../context/AccountContext'
 import { Link, useNavigate } from 'react-router-dom'
 
 import Form from '../components/Form'
@@ -8,7 +8,7 @@ import Submit from '../components/Submit'
 
 const LogInPage = () => {
 
-  const { email, setEmail, password, setPassword } = useContext(UserAuthContext);
+  const { email, setEmail, password, setPassword } = useContext(AccountContext);
   const navigate = useNavigate();
 
   const logInUser = async (event) => {
