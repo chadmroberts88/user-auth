@@ -4,13 +4,11 @@ import styled from 'styled-components'
 const StyledForm = styled.form`
   display: flex;
   flex-direction: column;
-  align-items: center;
+  /* align-items: center; */
   justify-content: center;
-  width: 80vw;
-  height: 40vh;
-  max-width: 340px;
+  max-width: 60vw;
   min-width: 240px;
-  max-height: 340px;
+  max-height: 80vh;
   min-height: 240px;
   border: 1px solid black;
   border-radius: 10px;
