@@ -2,7 +2,7 @@ import React, { useContext } from 'react'
 import { AccountContext } from '../context/AccountContext'
 import { Link, useNavigate } from 'react-router-dom'
 
-import Form from '../components/Form'
+import Panel from '../components/Panel'
 import Input from '../components/Input'
 import Submit from '../components/Submit'
 
@@ -41,26 +41,26 @@ const LogInPage = () => {
   }
 
   return (
-    <Form onSubmit={logInUser}>
+    <Panel >
       <h1>Log In</h1>
-      <Input
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        type='email'
-        placeholder='Email Address'
-      />
-      <Input
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        type='password'
-        placeholder='Password'
-      />
-      <Submit
-        value='Log In'
-        type='submit'
-      />
+      <form onSubmit={logInUser}>
+        <Input
+          onChange={(e) => setEmail(e.target.value)}
+          type='email'
+          placeholder='Email Address'
+        />
+        <Input
+          onChange={(e) => setPassword(e.target.value)}
+          type='password'
+          placeholder='Password'
+        />
+        <Submit
+          value='Log In'
+          type='submit'
+        />
+      </form>
       <Link to='/register'>Register</Link>
-    </Form>
+    </Panel>
   );
 }
 

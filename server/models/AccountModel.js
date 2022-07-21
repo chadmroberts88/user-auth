@@ -2,7 +2,7 @@ const Sequelize = require('sequelize');
 const db = require('../utils/Database');
 const dotenv = require('dotenv');
 const jwt = require('jsonwebtoken');
-const { Profile } = require('./ProfileModel');
+const { Profile, readRank } = require('./ProfileModel');
 const { Game } = require('./GameModel');
 
 dotenv.config({ path: './.env' });
@@ -53,6 +53,9 @@ const generateAuthToken = (id) => {
 const createAccount = async (user) => {
 
   try {
+
+    let id = null;
+
     const result = await db.transaction(async (trans) => {
 
       const account = await Account.create({
@@ -61,7 +64,7 @@ const createAccount = async (user) => {
       }, { transaction: trans });
 
       const profile = await account.createProfile({
-        username: user.username,
+        username: 'Player' + (Math.floor(Math.random() * 90000) + 10000),
         soundOn: user.soundOn,
         darkModeOn: user.darkModeOn,
         useSwipeOn: user.useSwipeOn,
@@ -77,8 +80,9 @@ const createAccount = async (user) => {
         tiles: user.tiles
       }, { transaction: trans });
 
+      id = account.id;
+
       const newUser = {
-        id: account.id,
         account: {
           email: account.email
         },
@@ -98,11 +102,13 @@ const createAccount = async (user) => {
           tiles: game.tiles
         }
       };
-
       return newUser;
     });
+
+    result.profile.rank = await readRank(id);
     return result;
   } catch (error) {
+    console.log(error);
     throw error;
   }
 }

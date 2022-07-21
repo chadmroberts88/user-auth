@@ -60,8 +60,9 @@ const readRank = async (accountId) => {
   try {
     const result = await Profile.findAll({
       attributes: ['account_id'],
-      order: [['best', 'DESC'], ['username', 'ASC']]
+      order: [['best', 'DESC'], ['createdAt', 'ASC']]
     });
+
     const rank = result.map(object => object.account_id).indexOf(accountId) + 1;
     return rank;
   } catch (error) {

@@ -15,7 +15,7 @@ if (!process.env.JWT_KEY) {
   process.exit(1);
 }
 
-app.use(cors());
+app.use(cors({ exposedHeaders: ['x-auth-token'] }));
 app.use(express.json());
 app.use('/api/account', accountRouter);
 app.use('/api/profile', profileRouter);

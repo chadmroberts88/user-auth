@@ -2,9 +2,9 @@ import React from 'react'
 import styled from 'styled-components'
 
 const StyledFileInput = styled.input`
-  margin-top: 10px;
+  margin-bottom: 10px;
   padding: 4px 0px;
-  height: 30px;
+  min-height: 30px;
   width: 100%;
 `;
 
