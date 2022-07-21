@@ -3,17 +3,17 @@ export const AccountContext = createContext({})
 
 const AccountProvider = ({ children }) => {
 
-  const [id, setId] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [token, setToken] = useState(null);
+  const [email, setEmail] = useState('none');
+  const [password, setPassword] = useState('none');
 
   return (
     <AccountContext.Provider
       value={{
-        id,
+        token,
         email,
         password,
-        setId,
+        setToken,
         setEmail,
         setPassword
       }}

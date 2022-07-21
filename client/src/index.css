@@ -17,6 +17,10 @@ body, #root {
   height: 100vh;
 }
 
+h1 {
+  margin-bottom: 10px;
+}
+
 @supports (-webkit-touch-callout: none) {
   body, #root {
     height: -webkit-fill-available;

@@ -16,12 +16,10 @@ const validateNewUser = (newUser) => {
   const schema = Joi.object({
     email: Joi.string().email().required(),
     password: Joi.string().required(),
-    username: Joi.string().min(5).required(),
     soundOn: Joi.boolean().required(),
     darkModeOn: Joi.boolean().required(),
     useSwipeOn: Joi.boolean().required(),
     best: Joi.number().integer().min(0).required(),
-    photo: Joi.any(),
     score: Joi.number().integer().min(0).required(),
     multiplier: Joi.number().integer().min(1).required(),
     tileIds: Joi.number().integer().min(0).required(),
@@ -50,31 +48,28 @@ const validateCredentials = (user) => {
 METHOD: POST
 ROUTE: /api/account/
 REQ: NewUser object
-RES: 200 (User object), 400 (Bad request), 500 (Server error)
+RES: 200 (User object), 400 (Bad request), 500 (Error)
 */
 
-router.post('/', upload.single('photo'), async (req, res) => {
+router.post('/', upload.none(), async (req, res) => {
 
   const { error, value } = validateNewUser(req.body);
-  if (error) return res.status(400).json({ message: 'Bad request.' });
+  if (error) return res.status(400).json(error);
 
   try {
-
-    if (req.file) {
-      value.fileName = req.file.originalname;
-      value.photo = req.file.buffer.toString('base64');
-    } else {
-      value.fileName = null;
-      value.photo = null;
-    }
-
     const salt = await bcrypt.genSalt(10);
     value.password = await bcrypt.hash(value.password, salt);
     const result = await Account.createAccount(value);
     const token = Account.generateAuthToken(result.id);
     return res.header('x-auth-token', token).status(200).json(result);
   } catch (error) {
-    return res.status(500).json({ message: 'Server error.' });
+    const errorMsgs = [];
+    let errorToSend = 'Registration error.'
+    error.errors.forEach(item => errorMsgs.push(item.message));
+    if (errorMsgs.includes('username must be unique')) {
+      errorToSend = "Username is already in use."
+    }
+    return res.status(500).json(errorToSend);
   }
 
 });

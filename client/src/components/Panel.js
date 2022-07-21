@@ -1,12 +1,8 @@
 import React from 'react'
 import styled from 'styled-components'
 
-const StyledForm = styled.form`
-  display: flex;
-  flex-direction: column;
-  /* align-items: center; */
-  justify-content: center;
-  max-width: 60vw;
+const StyledPanel = styled.div`
+  max-width: 80vw;
   min-width: 240px;
   max-height: 80vh;
   min-height: 240px;
@@ -15,14 +11,15 @@ const StyledForm = styled.form`
   padding: 20px;
   box-shadow: 5px 5px 18px 5px rgba(0,0,0,0.4);
   background-color: lightgrey;
+  overflow: hidden auto;
 `;
 
-const Form = (props) => {
+const Panel = (props) => {
   return (
-    <StyledForm {...props}>
+    <StyledPanel {...props}>
       {props.children}
-    </StyledForm>
+    </StyledPanel>
   )
 }
 
-export default Form
+export default Panel

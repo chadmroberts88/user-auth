@@ -3,13 +3,13 @@ export const ProfileContext = createContext({})
 
 const ProfileProvider = ({ children }) => {
 
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useState('Guest');
   const [soundOn, setSoundOn] = useState(true);
   const [darkModeOn, setDarkModeOn] = useState(false);
   const [useSwipeOn, setUseSwipeOn] = useState(false);
   const [best, setBest] = useState(0);
   const [rank, setRank] = useState(0);
-  const [fileName, setFileName] = useState('');
+  const [fileName, setFileName] = useState('none');
   const [photo, setPhoto] = useState(new File([], ''));
 
   return (
