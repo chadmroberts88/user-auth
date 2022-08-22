@@ -7,7 +7,7 @@ const { Game } = require('./GameModel');
 
 dotenv.config({ path: './.env' });
 
-// Define the Account model
+// Define the Account model.
 
 const Account = db.define('Accounts', {
   id: {
